@@ -10,6 +10,7 @@
 package pl.newclass.gsync.api;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +39,7 @@ public class SyncController {
   }
 
   @PostMapping(value = "/sync/dir")
-  public void addDir(@RequestBody String path) throws FileNotFoundException {
-    syncService.watchDir(path);
+  public void addDir(@RequestBody String path) throws IOException {
+    syncService.watchDir(path,"test");
   }
 }
