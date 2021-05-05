@@ -17,8 +17,14 @@ import pl.newclass.gsync.file.IWatchListener;
 @Component
 public class WatchMonitorFactory implements IWatchMonitorFactory {
 
+  private final IStorage storage;
+
+  public WatchMonitorFactory(IStorage storage) {
+    this.storage = storage;
+  }
+
   @Override
   public WatchMonitor create(Path patchObj, IWatchListener watchListener) {
-    return new WatchMonitor(patchObj, watchListener);
+    return new WatchMonitor(storage, patchObj, watchListener);
   }
 }

@@ -9,10 +9,8 @@
 package pl.newclass.gsync;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import pl.newclass.gsync.file.IWatchListener;
@@ -23,65 +21,74 @@ import pl.newclass.gsync.thread.AbstractMonitor;
  */
 public class WatchMonitor extends AbstractMonitor {
 
+  private final IStorage storage;
   private final Path path;
   private final IWatchListener watchListener;
-  private Map<String, Long> indexes = new HashMap<>();
 
-  public WatchMonitor(Path path, IWatchListener watchListener) {
+  public WatchMonitor(IStorage storage, Path path, IWatchListener watchListener) {
+    this.storage = storage;
     this.path = path;
     this.watchListener = watchListener;
   }
 
   @Override
   public void execute() throws InterruptedException {
-    Map<String, Long> cacheIndexes = new HashMap<>(indexes);
-    if (0 == indexes.size()) {
-      indexDir(path.toFile(), cacheIndexes);
+
+    try{
+      if (0 == storage.size(String.format("path-%s", path))) {
+        indexDir(path.toFile());
+      }
+
+      checkChanged();
+    }
+    catch (IOException e){
+      e.printStackTrace();//fixme add log
     }
 
-    checkChanged(cacheIndexes);
-
-    indexes = cacheIndexes;
     TimeUnit.SECONDS.sleep(1);
   }
 
-  private void checkChanged(Map<String, Long> changedIndexes) {
-    for (Entry<String, Long> index : indexes.entrySet()) {
-      var file = new File(index.getKey());
+  private void checkChanged() throws IOException {
+    for (String index : storage.find(String.format("path-%s", path))) {
+      var file = new File(index);
 
-      if (file.lastModified() == index.getValue()) {
+      long lastModified = Long.parseLong(storage.get(index));
+      if (file.lastModified() == lastModified) {
         continue;
       }
 
-      changedIndexes.put(file.getAbsolutePath(), file.lastModified());
+      storage.put(file.getAbsolutePath(), file.lastModified());
 
       if (file.isFile()) {
         watchListener.onModified(file);
         continue;
       }
 
-      indexDir(file, changedIndexes);
+      indexDir(file);
     }
   }
 
-  private void indexDir(File file, Map<String, Long> cacheIndexes) {
-    cacheIndexes.put(file.getAbsolutePath(), file.lastModified());
+  private void indexDir(File file) throws IOException {
+    storage.add(String.format("path-%s", path), file.getAbsolutePath());
+    storage.put(file.getAbsolutePath(), file.lastModified());
 
     for (File children : Objects.requireNonNull(file.listFiles())) {
       var name = children.getAbsolutePath();
 
-      if (cacheIndexes.containsKey(name)) {
+      if (storage.has(name)) {
         continue;
       }
 
       watchListener.onCreate(children);
 
       if (children.isDirectory()) {
-        indexDir(children, cacheIndexes);
+        indexDir(children);
         continue;
       }
 
-      cacheIndexes.put(name, children.lastModified());
+      storage.add(String.format("path-%s", path), name);
+      storage.put(name, children.lastModified());
+
     }
 
     //todo detect delete

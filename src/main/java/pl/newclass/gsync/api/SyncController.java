@@ -39,7 +39,7 @@ public class SyncController {
   }
 
   @PostMapping(value = "/sync/dir")
-  public void addDir(@RequestBody String path) throws IOException {
-    syncService.watchDir(path,"test");
+  public void addDir(@RequestBody SyncDirAttribute attribute) throws IOException {
+    syncService.watchDir(attribute.getName(),attribute.getPath(),attribute.getRemotePath(), attribute.getProvider());
   }
 }

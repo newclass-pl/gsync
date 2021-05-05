@@ -18,10 +18,12 @@ import pl.newclass.gsync.file.IWatchListener;
 public class WatchListener implements IWatchListener {
 
   private final String path;
+  private final String remotePath;
   private final IQueue queue;
 
-  public WatchListener(String path, IQueue queue) {
+  public WatchListener(String path, String remotePath, IQueue queue) {
     this.path = path;
+    this.remotePath = remotePath.replaceAll("^/|/$", "");
     this.queue = queue;
   }
 
@@ -34,7 +36,7 @@ public class WatchListener implements IWatchListener {
   private String getDestPath(File file) {
     var destPath = file.getAbsolutePath().replaceFirst("^" + new File(path).getAbsolutePath(), "");
 
-    return String.format("/test%s", destPath);
+    return String.format("/%s%s", remotePath, destPath);
   }
 
   @Override

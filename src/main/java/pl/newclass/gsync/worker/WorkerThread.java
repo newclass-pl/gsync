@@ -50,7 +50,10 @@ public class WorkerThread implements Runnable {
   }
 
   private void onUpdate(SyncEvent event) {
-    //fixme detect that same lastTime in event and file. If different then ignore event
+    if (event.getLastModified() != event.getFile().lastModified()) {
+      System.err.printf("%s changed last modified", event.getFile().getAbsolutePath()); //fixme add log
+      return;
+    }
     try {
       backupProvider.send(event.getFile(), event.getDestPath());
     } catch (IOException e) {

@@ -18,11 +18,13 @@ public class SyncEvent {
   private final File file;
   private final String destPath;
   private final ActionEvent action;
+  private final long lastModified;
 
   public SyncEvent(File file, String remotePath, ActionEvent action) {
     this.file = file;
     this.destPath = remotePath;
     this.action = action;
+    this.lastModified = file.lastModified();
   }
 
   public File getFile() {
@@ -35,5 +37,9 @@ public class SyncEvent {
 
   public ActionEvent getAction() {
     return action;
+  }
+
+  public long getLastModified() {
+    return lastModified;
   }
 }
