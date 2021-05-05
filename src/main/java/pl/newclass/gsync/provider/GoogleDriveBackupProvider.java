@@ -44,8 +44,8 @@ public class GoogleDriveBackupProvider implements IBackupProvider {
   private final String credentialPath;
   private final String tokenPath;
   private final Integer authPort;
-  private static List<String> SCOPES = new ArrayList<>();
-  private static String MIMETYPE_DIR = "application/vnd.google-apps.folder";
+  private static final List<String> SCOPES = new ArrayList<>();
+  private static final String MIMETYPE_DIR = "application/vnd.google-apps.folder";
 
   public GoogleDriveBackupProvider(String credentialPath, String tokenPath, Integer authPort) {
     this.credentialPath = credentialPath;
