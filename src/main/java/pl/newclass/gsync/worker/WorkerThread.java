@@ -51,7 +51,8 @@ public class WorkerThread implements Runnable {
 
   private void onUpdate(SyncEvent event) {
     if (event.getLastModified() != event.getFile().lastModified()) {
-      System.err.printf("%s changed last modified", event.getFile().getAbsolutePath()); //fixme add log
+      System.err
+          .printf("%s changed last modified", event.getFile().getAbsolutePath()); //fixme add log
       return;
     }
     try {
@@ -64,6 +65,7 @@ public class WorkerThread implements Runnable {
 
   private void onDelete(SyncEvent event) {
     //fixme detect if exists file. When exists and lastTime file is different that event lastTime then ignore
+    System.err.println("delete file " + event.getFile().getAbsolutePath());
 
   }
 }

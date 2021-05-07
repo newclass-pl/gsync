@@ -18,4 +18,6 @@ public interface IWatchListener {
   void onCreate(File file);
 
   void onModified(File file);
+
+  void onDelete(File file);
 }

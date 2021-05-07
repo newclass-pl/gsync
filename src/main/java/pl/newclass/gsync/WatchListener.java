@@ -43,4 +43,10 @@ public class WatchListener implements IWatchListener {
   public void onModified(File file) {
     onCreate(file);
   }
+
+  @Override
+  public void onDelete(File file) {
+    var destPath = getDestPath(file);
+    queue.add(new SyncEvent(file, destPath, ActionEvent.DELETE));
+  }
 }

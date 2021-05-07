@@ -34,14 +34,13 @@ public class WatchMonitor extends AbstractMonitor {
   @Override
   public void execute() throws InterruptedException {
 
-    try{
+    try {
       if (0 == storage.size(String.format("path-%s", path))) {
         indexDir(path.toFile());
       }
 
       checkChanged();
-    }
-    catch (IOException e){
+    } catch (IOException e) {
       e.printStackTrace();//fixme add log
     }
 
@@ -51,6 +50,13 @@ public class WatchMonitor extends AbstractMonitor {
   private void checkChanged() throws IOException {
     for (String index : storage.find(String.format("path-%s", path))) {
       var file = new File(index);
+
+      if (!file.exists()) {
+        storage.remove(index);
+        storage.remove(String.format("path-%s", path), index);
+        watchListener.onDelete(file);
+        continue;
+      }
 
       long lastModified = Long.parseLong(storage.get(index));
       if (file.lastModified() == lastModified) {
@@ -88,9 +94,6 @@ public class WatchMonitor extends AbstractMonitor {
 
       storage.add(String.format("path-%s", path), name);
       storage.put(name, children.lastModified());
-
     }
-
-    //todo detect delete
   }
 }

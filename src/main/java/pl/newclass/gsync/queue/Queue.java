@@ -8,7 +8,6 @@
  */
 package pl.newclass.gsync.queue;
 
-import java.io.File;
 import java.util.LinkedList;
 import pl.newclass.gsync.IQueue;
 import pl.newclass.gsync.SyncEvent;
@@ -23,6 +22,7 @@ public class Queue implements IQueue {
   @Override
   public synchronized void add(SyncEvent syncEvent) {
     events.add(syncEvent);
+    notify();
   }
 
   @Override

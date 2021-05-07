@@ -13,12 +13,12 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import javax.security.auth.login.LoginException;
+import java.util.Collections;
 import org.springframework.stereotype.Component;
 
 /**
@@ -89,12 +89,42 @@ public class FileStorage implements IStorage {
   }
 
   @Override
-  public Iterable<? extends String> find(String format) {
-    return null;
+  public Iterable<String> find(String name) {
+    var path = getPath(name);
+    var file = new File(path);
+
+    if (file.exists()) {
+      return new FileIteratorFactory(file);
+    }
+
+    return Collections.emptyList();
   }
 
   @Override
-  public String get(String name) {
-    return null;
+  public String get(String name) throws IOException {
+    var path = getPath(name);
+    return Files.readString(Paths.get(path));
+  }
+
+  @Override
+  public void remove(String name) throws IOException {
+    var path = getPath(name);
+    Files.deleteIfExists(Paths.get(path));
+  }
+
+  @Override
+  public void remove(String name, String line) throws IOException {
+    var path = getPath(name);
+    File file = new File(path);
+    File temp = new File(String.format("%s.tmp", path));
+    PrintWriter out = new PrintWriter(new FileWriter(temp));
+    Files.lines(file.toPath())
+        .filter(record -> !record.equals(line))
+        .forEach(out::println);
+    out.flush();
+    out.close();
+    if (!temp.renameTo(file)) {
+      throw new IOException("Can not flush changes.");
+    }
   }
 }

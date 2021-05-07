@@ -25,5 +25,9 @@ public interface IStorage {
 
   Iterable<? extends String> find(String format);
 
-  String get(String name);
+  String get(String name) throws IOException;
+
+  void remove(String name) throws IOException;
+
+  void remove(String name, String line) throws IOException;
 }
