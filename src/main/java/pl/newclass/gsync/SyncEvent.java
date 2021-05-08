@@ -15,10 +15,13 @@ import java.io.File;
  */
 public class SyncEvent {
 
-  private final File file;
-  private final String destPath;
-  private final ActionEvent action;
-  private final long lastModified;
+  private File file;
+  private String destPath;
+  private ActionEvent action;
+  private long lastModified;
+
+  public SyncEvent() {
+  }
 
   public SyncEvent(File file, String remotePath, ActionEvent action) {
     this.file = file;

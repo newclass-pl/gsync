@@ -41,31 +41,34 @@ public class WorkerThread implements Runnable {
   private void round() throws InterruptedException {
     var event = queue.poll();
 
-    if (event.getAction() == ActionEvent.DELETE) {
-      onDelete(event);
-      return;
-    }
+    try{
+      if (event.getAction() == ActionEvent.DELETE) {
+        onDelete(event);
+        queue.flush(event);
+        return;
+      }
 
-    onUpdate(event);
+      onUpdate(event);
+      queue.flush(event);
+    }
+    catch (IOException e){
+      e.printStackTrace(); //fixme add log
+    }
   }
 
-  private void onUpdate(SyncEvent event) {
+  private void onUpdate(SyncEvent event) throws IOException {
     if (event.getLastModified() != event.getFile().lastModified()) {
       System.err
           .printf("%s changed last modified", event.getFile().getAbsolutePath()); //fixme add log
       return;
     }
-    try {
-      backupProvider.send(event.getFile(), event.getDestPath());
-    } catch (IOException e) {
-      e.printStackTrace(); //fixme add log
-    }
+    backupProvider.send(event.getFile(), event.getDestPath());
 
   }
 
   private void onDelete(SyncEvent event) {
     //fixme detect if exists file. When exists and lastTime file is different that event lastTime then ignore
     System.err.println("delete file " + event.getFile().getAbsolutePath());
-
+    queue.flush(event);
   }
 }

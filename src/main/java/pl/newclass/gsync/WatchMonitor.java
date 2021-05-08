@@ -8,6 +8,8 @@
  */
 package pl.newclass.gsync;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -24,11 +26,13 @@ public class WatchMonitor extends AbstractMonitor {
   private final IStorage storage;
   private final Path path;
   private final IWatchListener watchListener;
+  private final ObjectMapper objectMapper;
 
   public WatchMonitor(IStorage storage, Path path, IWatchListener watchListener) {
     this.storage = storage;
     this.path = path;
     this.watchListener = watchListener;
+    objectMapper = new ObjectMapper();
   }
 
   @Override
@@ -49,21 +53,22 @@ public class WatchMonitor extends AbstractMonitor {
 
   private void checkChanged() throws IOException {
     for (String index : storage.find("watch")) {
-      var file = new File(index);
+      var fileInfo= unserializable(index);
+      var file = new File(fileInfo.getPath());
 
       if (!file.exists()) {
         storage.remove("watch", index);
-        storage.remove(String.format("path-%s", path), index);
         watchListener.onDelete(file);
         continue;
       }
 
-      long lastModified = Long.parseLong(storage.get("watch", index));
+      long lastModified = fileInfo.getLastModified();
       if (file.lastModified() == lastModified) {
         continue;
       }
 
-      storage.add("watch", file.getAbsolutePath(), file.lastModified());
+      var data=serialize(file);
+      storage.add("watch", file.getAbsolutePath(), data);
 
       if (file.isFile()) {
         watchListener.onModified(file);
@@ -74,8 +79,13 @@ public class WatchMonitor extends AbstractMonitor {
     }
   }
 
+  private FileInfo unserializable(String data) throws IOException {
+    return objectMapper.readValue(data,FileInfo.class);
+  }
+
   private void indexDir(File file) throws IOException {
-    storage.add("watch", file.getAbsolutePath(), file.lastModified());
+    var data = serialize(file);
+    storage.add("watch", file.getAbsolutePath(), data);
 
     for (File children : Objects.requireNonNull(file.listFiles())) {
       var name = children.getAbsolutePath();
@@ -91,7 +101,15 @@ public class WatchMonitor extends AbstractMonitor {
         continue;
       }
 
-      storage.add("watch", name, children.lastModified());
+      data = serialize(children);
+      storage.add("watch", name, data);
     }
+  }
+
+  private String serialize(File file) throws JsonProcessingException {
+    var fileInfo = new FileInfo();
+    fileInfo.setLastModified(file.lastModified());
+    fileInfo.setPath(file.getAbsolutePath());
+    return objectMapper.writeValueAsString(fileInfo);
   }
 }

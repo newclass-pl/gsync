@@ -28,7 +28,18 @@ public class CacheQueue implements IQueue {
   public CacheQueue(IStorage storage) {
     this.storage = storage;
     objectMapper = new ObjectMapper();
-    //fixme load queue from storage
+    loadQueue();
+  }
+
+  private void loadQueue() {
+    for (String data : storage.find("queue")) {
+      try {
+        var syncEvent = objectMapper.readValue(data, SyncEvent.class);
+        add(syncEvent);
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();//fixme add log
+      }
+    }
   }
 
   @Override
