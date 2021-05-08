@@ -13,13 +13,16 @@ package pl.newclass.gsync;
  */
 public class SyncConfig {
 
-  private final String name;
-  private final String path;
-  private final String remotePath;
-  private final String providerName;
+  private  String name;
+  private  String path;
+  private  String remotePath;
+  private  String providerName;
+
+  public SyncConfig(){
+
+  }
 
   public SyncConfig(String name, String path, String remotePath, String providerName) {
-
     this.name = name;
     this.path = path;
     this.remotePath = remotePath;

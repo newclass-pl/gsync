@@ -35,7 +35,7 @@ public class WatchMonitor extends AbstractMonitor {
   public void execute() throws InterruptedException {
 
     try {
-      if (0 == storage.size(String.format("path-%s", path))) {
+      if (0 == storage.size("watch")) {
         indexDir(path.toFile());
       }
 
@@ -48,22 +48,22 @@ public class WatchMonitor extends AbstractMonitor {
   }
 
   private void checkChanged() throws IOException {
-    for (String index : storage.find(String.format("path-%s", path))) {
+    for (String index : storage.find("watch")) {
       var file = new File(index);
 
       if (!file.exists()) {
-        storage.remove(index);
+        storage.remove("watch", index);
         storage.remove(String.format("path-%s", path), index);
         watchListener.onDelete(file);
         continue;
       }
 
-      long lastModified = Long.parseLong(storage.get(index));
+      long lastModified = Long.parseLong(storage.get("watch", index));
       if (file.lastModified() == lastModified) {
         continue;
       }
 
-      storage.put(file.getAbsolutePath(), file.lastModified());
+      storage.add("watch", file.getAbsolutePath(), file.lastModified());
 
       if (file.isFile()) {
         watchListener.onModified(file);
@@ -75,13 +75,12 @@ public class WatchMonitor extends AbstractMonitor {
   }
 
   private void indexDir(File file) throws IOException {
-    storage.add(String.format("path-%s", path), file.getAbsolutePath());
-    storage.put(file.getAbsolutePath(), file.lastModified());
+    storage.add("watch", file.getAbsolutePath(), file.lastModified());
 
     for (File children : Objects.requireNonNull(file.listFiles())) {
       var name = children.getAbsolutePath();
 
-      if (storage.has(name)) {
+      if (storage.has("watch", name)) {
         continue;
       }
 
@@ -92,8 +91,7 @@ public class WatchMonitor extends AbstractMonitor {
         continue;
       }
 
-      storage.add(String.format("path-%s", path), name);
-      storage.put(name, children.lastModified());
+      storage.add("watch", name, children.lastModified());
     }
   }
 }

@@ -11,6 +11,7 @@ package pl.newclass.gsync.queue;
 import org.springframework.stereotype.Component;
 import pl.newclass.gsync.IQueue;
 import pl.newclass.gsync.IQueueFactory;
+import pl.newclass.gsync.IStorage;
 
 /**
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
@@ -18,8 +19,14 @@ import pl.newclass.gsync.IQueueFactory;
 @Component
 public class QueueFactory implements IQueueFactory {
 
+  private final IStorage storage;
+
+  public QueueFactory(IStorage storage) {
+    this.storage = storage;
+  }
+
   @Override
   public IQueue create() {
-    return new Queue();
+    return new CacheQueue(storage);
   }
 }

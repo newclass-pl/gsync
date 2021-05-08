@@ -15,19 +15,15 @@ import java.io.IOException;
  */
 public interface IStorage {
 
-  int size(String name) throws IOException;
+  int size(String category) throws IOException;
 
-  void add(String name, Object value) throws IOException;
+  void add(String category, String name, Object value) throws IOException;
 
-  void put(String absolutePath, Object value) throws IOException;
+  boolean has(String category, String name);
 
-  boolean has(String name);
+  Iterable<? extends String> find(String category);
 
-  Iterable<? extends String> find(String format);
+  String get(String category, String name) throws IOException;
 
-  String get(String name) throws IOException;
-
-  void remove(String name) throws IOException;
-
-  void remove(String name, String line) throws IOException;
+  void remove(String category, String name) throws IOException;
 }

@@ -18,4 +18,6 @@ public interface IQueue {
   void add(SyncEvent syncEvent);
 
   SyncEvent poll() throws InterruptedException;
+
+  void flush(SyncEvent syncEvent);
 }

@@ -8,11 +8,12 @@
  */
 package pl.newclass.gsync;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Iterator;
 
 /**
@@ -21,8 +22,8 @@ import java.util.Iterator;
 public class FileIterator implements Iterator<String> {
 
   private final File file;
-  private BufferedReader stream;
-  private String line;
+  private DirectoryStream<Path> stream;
+  private Iterator<Path> iterator;
 
   public FileIterator(File file) {
     this.file = file;
@@ -34,13 +35,7 @@ public class FileIterator implements Iterator<String> {
       createStream();
     }
 
-    try {
-      line = stream.readLine();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    if (null != line) {
+    if (iterator.hasNext()) {
       return true;
     }
 
@@ -59,14 +54,19 @@ public class FileIterator implements Iterator<String> {
 
   private void createStream() {
     try {
-      stream = new BufferedReader(new FileReader(file));
-    } catch (FileNotFoundException e) {
+      stream = Files.newDirectoryStream(Paths.get(file.getAbsolutePath()));
+      iterator = stream.iterator();
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
   public String next() {
-    return line;
+    try {
+      return Files.readString(iterator.next());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

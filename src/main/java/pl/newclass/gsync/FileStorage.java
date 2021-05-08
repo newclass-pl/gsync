@@ -8,17 +8,14 @@
  */
 package pl.newclass.gsync;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.Collections;
+import java.util.Objects;
 import org.springframework.stereotype.Component;
 
 /**
@@ -27,7 +24,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class FileStorage implements IStorage {
 
-  private String dir;
+  private final String dir;
 
   public FileStorage() throws IOException {
     dir = "var";
@@ -40,32 +37,38 @@ public class FileStorage implements IStorage {
   }
 
   @Override
-  public int size(String name) throws IOException {
-    String path = getPath(name);
+  public int size(String category) {
+    String path = getPath(category);
     var file = new File(path);
 
     if (!file.exists()) {
       return 0;
     }
-    try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-      int quantity = 0;
-      while (br.readLine() != null) {
-        ++quantity;
-      }
 
-      return quantity;
-    }
+    return Objects.requireNonNull(file.list()).length;
   }
 
-  private String getPath(String name) {
-    return String.format("%s/%d", dir, name.hashCode());
+  private String getPath(String category) {
+    return String.format("%s/%s", dir, category);
+  }
+
+  private String getPath(String category, String name) {
+    return String.format("%s/%s/%d", dir, category, name.hashCode());
   }
 
   @Override
-  public void add(String name, Object value) throws IOException {
-    var path = getPath(name);
+  public void add(String category, String name, Object value) throws IOException {
+    var path = getPath(category);
+    var categoryFile = new File(path);
+
+    if (!categoryFile.exists() && !categoryFile.mkdirs()) {
+      throw new IOException(String.format("Can not create dir %s.", path));
+    }
+
+    path = getPath(category, name);
+
     var option = StandardOpenOption.CREATE;
-    if (has(name)) {
+    if (has(category, name)) {
       option = StandardOpenOption.APPEND;
     }
 
@@ -74,23 +77,15 @@ public class FileStorage implements IStorage {
   }
 
   @Override
-  public void put(String name, Object value) throws IOException {
-    var path = getPath(name);
-    Files.write(Paths.get(path),
-        (value.toString()).getBytes(StandardCharsets.UTF_8),
-        StandardOpenOption.CREATE);
-  }
-
-  @Override
-  public boolean has(String name) {
-    var path = getPath(name);
+  public boolean has(String category, String name) {
+    var path = getPath(category, name);
     var file = new File(path);
     return file.exists();
   }
 
   @Override
-  public Iterable<String> find(String name) {
-    var path = getPath(name);
+  public Iterable<String> find(String category) {
+    var path = getPath(category);
     var file = new File(path);
 
     if (file.exists()) {
@@ -101,30 +96,14 @@ public class FileStorage implements IStorage {
   }
 
   @Override
-  public String get(String name) throws IOException {
-    var path = getPath(name);
+  public String get(String category, String name) throws IOException {
+    var path = getPath(category, name);
     return Files.readString(Paths.get(path));
   }
 
   @Override
-  public void remove(String name) throws IOException {
-    var path = getPath(name);
+  public void remove(String category, String name) throws IOException {
+    var path = getPath(category, name);
     Files.deleteIfExists(Paths.get(path));
-  }
-
-  @Override
-  public void remove(String name, String line) throws IOException {
-    var path = getPath(name);
-    File file = new File(path);
-    File temp = new File(String.format("%s.tmp", path));
-    PrintWriter out = new PrintWriter(new FileWriter(temp));
-    Files.lines(file.toPath())
-        .filter(record -> !record.equals(line))
-        .forEach(out::println);
-    out.flush();
-    out.close();
-    if (!temp.renameTo(file)) {
-      throw new IOException("Can not flush changes.");
-    }
   }
 }
