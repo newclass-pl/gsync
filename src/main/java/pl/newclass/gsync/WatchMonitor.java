@@ -53,11 +53,11 @@ public class WatchMonitor extends AbstractMonitor {
 
   private void checkChanged() throws IOException {
     for (String index : storage.find("watch")) {
-      var fileInfo= unserializable(index);
+      var fileInfo = unserializable(index);
       var file = new File(fileInfo.getPath());
 
       if (!file.exists()) {
-        storage.remove("watch", index);
+        storage.remove("watch", fileInfo.getPath());
         watchListener.onDelete(file);
         continue;
       }
@@ -67,7 +67,7 @@ public class WatchMonitor extends AbstractMonitor {
         continue;
       }
 
-      var data=serialize(file);
+      var data = serialize(file);
       storage.add("watch", file.getAbsolutePath(), data);
 
       if (file.isFile()) {
@@ -80,7 +80,7 @@ public class WatchMonitor extends AbstractMonitor {
   }
 
   private FileInfo unserializable(String data) throws IOException {
-    return objectMapper.readValue(data,FileInfo.class);
+    return objectMapper.readValue(data, FileInfo.class);
   }
 
   private void indexDir(File file) throws IOException {

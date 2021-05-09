@@ -32,13 +32,13 @@ public class SyncController {
   }
 
   @GetMapping("/sync/dirs")
-  public Map<String, String> getDirs() throws FileNotFoundException {
+  public Map<String, String> getDirs() {
     Map<String, String> test = new HashMap<>();
     test.put("test", "a");
     return test;
   }
 
-  @PostMapping(value = "/sync/dir")
+  @PostMapping(value = "/sync/add")
   public void addDir(@RequestBody SyncDirAttribute attribute) throws IOException {
     syncService.watchDir(attribute.getName(), attribute.getPath(), attribute.getRemotePath(),
         attribute.getProvider());

@@ -21,10 +21,22 @@ import pl.newclass.gsync.provider.GoogleDriveBackupProvider;
 public class BackupProviderService implements IBackupProviderService {
 
   private final Map<String, IBackupProvider> providers = new HashMap<>();
+  private final Map<String, IBackupProviderFactory> factories = new HashMap<>();
+  private final BackupProviderFactoryCollection factoryCollection;
+  private final IStorage storage;
 
-  public BackupProviderService() { //fixme add storage service
+  public BackupProviderService(BackupProviderFactoryCollection factoryCollection,IStorage storage) {
+    this.factoryCollection = factoryCollection; //fixme add storage service
+    this.storage = storage;
     providers.put("test",
         new GoogleDriveBackupProvider("var/credential.json", "var/token.json", 8088));
+  }
+
+  public void add(String name, String providerFactoryName, Map<String, Object> config) {
+    var providerFactory = factoryCollection.get(providerFactoryName);
+    var provider = providerFactory.create(config);
+    providers.put(name, provider);
+    //fixme save to storage
   }
 
   @Override

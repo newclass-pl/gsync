@@ -30,7 +30,9 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import pl.newclass.gsync.IBackupProvider;
 
@@ -46,6 +48,7 @@ public class GoogleDriveBackupProvider implements IBackupProvider {
   private final Integer authPort;
   private static final List<String> SCOPES = new ArrayList<>();
   private static final String MIMETYPE_DIR = "application/vnd.google-apps.folder";
+  private static final Map<String, String> cache = new HashMap<>();
 
   public GoogleDriveBackupProvider(String credentialPath, String tokenPath, Integer authPort) {
     this.credentialPath = credentialPath;
@@ -63,10 +66,22 @@ public class GoogleDriveBackupProvider implements IBackupProvider {
   }
 
   @Override
+  public void delete(String path) throws IOException {
+    try {
+      var service = connect();
+      var id = getParentId(service, Arrays.stream(path.split("/")).toArray(String[]::new));
+
+      service.files().delete(id);
+    } catch (GeneralSecurityException e) {
+      throw new IOException(e);
+    }
+  }
+
+  @Override
   public void send(File file, String path) throws IOException {
     try {
       var service = connect();
-      List<String> parts = Arrays.stream(path.split("/")).collect(Collectors.toList());
+      List<String> parts = Arrays.stream(path.split(File.separator)).collect(Collectors.toList());
       String fileName = parts.remove(parts.size() - 1);
 
       var parentId = getParentId(service, parts.toArray(new String[0]));
@@ -96,17 +111,31 @@ public class GoogleDriveBackupProvider implements IBackupProvider {
   }
 
   private String getParentId(Drive service, String[] parts) throws IOException {
+    StringBuilder path = new StringBuilder(String.join(File.separator, parts));
+
+    if (cache.containsKey(path.toString())) {
+      return cache.get(path.toString());
+    }
+
     var parentId = "root";
+    path = new StringBuilder();
+
     for (String part : parts) {
       if (part.equals("")) {
         continue;
       }
+
+      path.append(File.separator);
+
+      path.append(part);
 
       var dirId = getDirId(service, part, parentId);
 
       if (null == dirId) {
         dirId = createDir(service, part, parentId);
       }
+
+      cache.put(path.toString(), dirId);
 
       parentId = dirId;
     }

@@ -8,15 +8,9 @@
  */
 package pl.newclass.gsync;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
  */
-public interface IBackupProvider {
+public class ConfigBuilder {
 
-  void send(File file, String path) throws IOException;
-
-  void delete(String path) throws IOException;
 }

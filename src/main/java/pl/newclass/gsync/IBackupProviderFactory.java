@@ -8,15 +8,16 @@
  */
 package pl.newclass.gsync;
 
-import java.io.File;
-import java.io.IOException;
+import java.util.Map;
 
 /**
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
  */
-public interface IBackupProvider {
+public interface IBackupProviderFactory {
 
-  void send(File file, String path) throws IOException;
+  String getName();
 
-  void delete(String path) throws IOException;
+  void configure(ConfigBuilder configBuilder);
+
+  IBackupProvider create(Map<String,Object> config);
 }
