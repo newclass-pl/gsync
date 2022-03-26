@@ -21,7 +21,7 @@ import pl.newclass.gsync.IWorkerService;
 @Component
 public class WorkerService implements IWorkerService {
 
-  private Executor executor;
+  private final Executor executor;
 
   public WorkerService() {
     executor = Executors.newWorkStealingPool();
@@ -29,8 +29,8 @@ public class WorkerService implements IWorkerService {
 
   @Override
   public void run(IQueue queue, IBackupProvider backupProvider, int quantity) {
-    for(int i=0; i<quantity;i++){
-      executor.execute(new WorkerThread(queue,backupProvider));
+    for (int i = 0; i < quantity; i++) {
+      executor.execute(new WorkerThread(queue, backupProvider));
     }
   }
 }

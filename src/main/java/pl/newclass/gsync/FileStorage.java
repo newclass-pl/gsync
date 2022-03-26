@@ -68,9 +68,6 @@ public class FileStorage implements IStorage {
     path = getPath(category, name);
 
     var option = StandardOpenOption.CREATE;
-    if (has(category, name)) {
-      option = StandardOpenOption.APPEND;
-    }
 
     Files.write(Paths.get(path),
         (value.toString() + System.lineSeparator()).getBytes(StandardCharsets.UTF_8), option);

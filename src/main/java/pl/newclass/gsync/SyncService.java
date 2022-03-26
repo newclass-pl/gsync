@@ -9,6 +9,7 @@
 package pl.newclass.gsync;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class SyncService {
     for (String config : storage.find("sync")) {
       try {
         var syncConfig = objectMapper.readValue(config, SyncConfig.class);
-        watchDir(syncConfig.getName(), syncConfig.getPath(), syncConfig.getRemotePath(),
+        runObserverDir(syncConfig.getName(), syncConfig.getPath(), syncConfig.getRemotePath(),
             syncConfig.getProviderName());
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -50,15 +51,19 @@ public class SyncService {
     }
   }
 
-  public synchronized void watchDir(String name, String path, String remotePath,
-      String providerName)
+  private void runObserverDir(String name, String path, String remotePath, String providerName)
       throws IOException {
-    //fixme check if exists name
     var backupProvider = backupProviderService.getProvider(providerName);
     var queue = queueFactory.create();
     watchService.addDir(path, new WatchListener(path, remotePath, queue));
     workerService.run(queue, backupProvider, 5);
+  }
 
+  public synchronized void watchDir(String name, String path, String remotePath,
+      String providerName)
+      throws IOException {
+    //fixme check if exists name
+    runObserverDir(name, path, remotePath, providerName);
     var config = new SyncConfig(name, path, remotePath, providerName);
     configs.put(name, config);
     var jsonData = new ObjectMapper().writeValueAsString(config);

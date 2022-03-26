@@ -41,7 +41,7 @@ import pl.newclass.gsync.IBackupProvider;
  */
 public class GoogleDriveBackupProvider implements IBackupProvider {
 
-  private static final String APPLICATION_NAME = "GSynd";
+  private static final String APPLICATION_NAME = "GSync";
   private static final JacksonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
   private final String credentialPath;
   private final String tokenPath;

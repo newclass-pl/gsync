@@ -26,7 +26,7 @@ public class BackupProviderController {
     this.backupProviderService = backupProviderService;
   }
 
-  @PostMapping(value = "/sync/add")
+  @PostMapping(value = "/backup/add")
   public void add(@RequestBody SyncDirAttribute attribute) throws IOException {
     //todo
   }

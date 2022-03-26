@@ -25,9 +25,14 @@ public class BackupProviderService implements IBackupProviderService {
   private final BackupProviderFactoryCollection factoryCollection;
   private final IStorage storage;
 
-  public BackupProviderService(BackupProviderFactoryCollection factoryCollection,IStorage storage) {
+  public BackupProviderService(BackupProviderFactoryCollection factoryCollection,
+      IStorage storage) {
     this.factoryCollection = factoryCollection; //fixme add storage service
     this.storage = storage;
+    restore();
+  }
+
+  private void restore() {
     providers.put("test",
         new GoogleDriveBackupProvider("var/credential.json", "var/token.json", 8088));
   }
