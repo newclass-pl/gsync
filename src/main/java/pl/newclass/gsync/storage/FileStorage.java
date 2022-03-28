@@ -6,7 +6,7 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-package pl.newclass.gsync;
+package pl.newclass.gsync.storage;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,21 +17,20 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 import java.util.Objects;
 import org.springframework.stereotype.Component;
+import pl.newclass.gsync.FileIteratorFactory;
+import pl.newclass.gsync.IStorage;
 
 /**
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
  */
-@Component
 public class FileStorage implements IStorage {
 
-  private final String dir;
+  private final File dir;
 
-  public FileStorage() throws IOException {
-    dir = "var";
+  public FileStorage(File dir) throws IOException {
+    this.dir = dir;
 
-    var file = new File(dir);
-
-    if (!file.exists() && !file.mkdirs()) {
+    if (!dir.exists() && !dir.mkdirs()) {
       throw new IOException(String.format("Can not create dir %s.", dir));
     }
   }
@@ -49,11 +48,11 @@ public class FileStorage implements IStorage {
   }
 
   private String getPath(String category) {
-    return String.format("%s/%s", dir, category);
+    return String.format("%s/%s", dir.getAbsolutePath(), category);
   }
 
   private String getPath(String category, String name) {
-    return String.format("%s/%s/%d", dir, category, name.hashCode());
+    return String.format("%s/%s/%d", dir.getAbsolutePath(), category, name.hashCode());
   }
 
   @Override

@@ -12,5 +12,5 @@ package pl.newclass.gsync;
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
  */
 public enum ActionEvent {
-  UPDATE,DELETE
+  UPDATE, DELETE
 }

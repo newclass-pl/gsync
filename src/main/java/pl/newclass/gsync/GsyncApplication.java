@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class GsyncApplication {
 
   public static void main(String[] args) {
-    SpringApplication.run(GsyncApplication.class, args);
+    var applicationContext=SpringApplication.run(GsyncApplication.class, args);
   }
 
 }

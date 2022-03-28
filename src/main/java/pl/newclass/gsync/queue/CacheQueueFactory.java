@@ -17,11 +17,11 @@ import pl.newclass.gsync.IStorage;
  * @author Michal Tomczak <michal.tomczak@newclass.pl>
  */
 @Component
-public class QueueFactory implements IQueueFactory {
+public class CacheQueueFactory implements IQueueFactory {
 
   private final IStorage storage;
 
-  public QueueFactory(IStorage storage) {
+  public CacheQueueFactory(IStorage storage) {
     this.storage = storage;
   }
 

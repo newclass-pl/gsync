@@ -1,24 +1,24 @@
 package pl.newclass.gsync;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.util.FileSystemUtils;
 import pl.newclass.gsync.file.IWatchListener;
+import pl.newclass.gsync.storage.FileStorage;
 
 /*
  * This file is part of the gsyn
@@ -43,60 +43,122 @@ class WatchMonitorTest {
   @Mock
   private IWatchListener watchListener;
 
-  @BeforeEach
-  public void setUp() {
-    Path path = Path.of("var", "test");
-    path.toFile().delete();
-    path.toFile().mkdirs();
-    watchMonitor = new WatchMonitor(storage, Path.of("var", "test"), watchListener);
+  private final ObjectMapper objectMapper;
+  private File filePath;
 
+  public WatchMonitorTest() {
+    objectMapper = new ObjectMapper();
+  }
+
+  @BeforeEach
+  public void setUp() throws IOException {
+    Path path = Path.of("var", "test");
+    FileSystemUtils.deleteRecursively(path.toFile());
+    path.toFile().mkdirs();
+    filePath = Path.of("var", "test", "file").toFile();
+    filePath.mkdirs();
+
+    storage = new FileStorage(path.toFile());
+    watchMonitor = new WatchMonitor(storage, Path.of("var", "test", "file"), watchListener);
+  }
+
+  @AfterEach
+  public void tearDown() {
+    watchMonitor.stop();
   }
 
   @Test
   void executeAddNewDir() throws InterruptedException, IOException {
-    when(storage.size(ArgumentMatchers.eq("watch"))).thenReturn(1);
-    var watchFind = new ArrayList<String>();
-    watchFind.add("{\"path\":\"var/test\",\"lastModified\":1648329857086}");
-    Iterable watchFindIterator = new StringIteratorFactory(watchFind);
-    when(storage.find("watch")).thenReturn(watchFindIterator);
+    var data = serialize(filePath);
+    storage.add("watch", filePath.getAbsolutePath(), data);
+    watchMonitor.start();
 
-    watchMonitor.execute();
+    TimeUnit.SECONDS.sleep(2);
+    var newDir = Path.of(filePath.getAbsolutePath(), "new_dir").toFile();
+    newDir.mkdir();
+    TimeUnit.SECONDS.sleep(2);
 
-    Path.of("var", "test", "new_dir").toFile().mkdir();
-    TimeUnit.SECONDS.sleep(1);
-    verify(watchListener).onCreate(ArgumentMatchers.eq(new File("var/test/new_dir")));
+    verify(watchListener).onCreate(ArgumentMatchers.eq(newDir));
+    verify(watchListener, never()).onDelete(ArgumentMatchers.any());
+    verify(watchListener, never()).onModified(ArgumentMatchers.any());
   }
 
   @Test
   void executeRenameDir() throws InterruptedException, IOException {
-    File newDir = Path.of("var", "test", "new_dir").toFile();
-    if(!newDir.mkdir()){
-      throw new RuntimeException("Cannot create dir");
-    }
+    var data = serialize(filePath);
+    storage.add("watch", filePath.getAbsolutePath(), data);
 
-    File testDir = Path.of("var", "test").toFile();
+    var newDir = Path.of(filePath.getAbsolutePath(), "new_dir").toFile();
+    newDir.mkdir();
+    storage.add("watch", newDir.getAbsolutePath(), serialize(newDir));
 
-    when(storage.size(ArgumentMatchers.eq("watch"))).thenReturn(1);
-    var watchFind = new ArrayList<String>();
-    watchFind.add("{\"path\":\"var/test\",\"lastModified\":" + testDir.lastModified() + "}");
-    watchFind.add("{\"path\":\"var/test/new_dir\",\"lastModified\":" + newDir.lastModified() + "}");
-    Iterable watchFindIterator = new StringIteratorFactory(watchFind);
-    when(storage.find("watch")).thenReturn(watchFindIterator);
-    when(
-        storage.has(ArgumentMatchers.eq("watch"), ArgumentMatchers.contains("new_dir"))).thenReturn(
-        true);
-    when(
-        storage.has(ArgumentMatchers.eq("watch"),
-            ArgumentMatchers.contains("renamed_dir"))).thenReturn(
-        false);
-    watchMonitor.execute();
+    watchMonitor.start();
 
-    Path.of("var", "test", "new_dir").toFile()
-        .renameTo(Path.of("var", "test", "renamed_dir").toFile());
-    TimeUnit.SECONDS.sleep(1);
+    TimeUnit.SECONDS.sleep(2);
 
-    verify(watchListener).onDelete(ArgumentMatchers.eq(new File("var/test/new_dir")));
-    verify(watchListener).onCreate(ArgumentMatchers.eq(new File("var/test/renamed_dir")));
+    var renamedDir = Path.of(filePath.getAbsolutePath(), "renamed_dir").toFile();
+    newDir.renameTo(renamedDir);
+
+    TimeUnit.SECONDS.sleep(2);
+
+    verify(watchListener).onDelete(ArgumentMatchers.eq(newDir));
+    verify(watchListener).onCreate(ArgumentMatchers.eq(renamedDir));
+    verify(watchListener, never()).onModified(ArgumentMatchers.any());
+  }
+
+  @Test
+  void executeDeleteDir() throws InterruptedException, IOException {
+    var data = serialize(filePath);
+    storage.add("watch", filePath.getAbsolutePath(), data);
+
+    var newDir = Path.of(filePath.getAbsolutePath(), "new_dir").toFile();
+    newDir.mkdir();
+    storage.add("watch", newDir.getAbsolutePath(), serialize(newDir));
+
+    watchMonitor.start();
+
+    TimeUnit.SECONDS.sleep(2);
+
+    newDir.delete();
+
+    TimeUnit.SECONDS.sleep(2);
+
+    verify(watchListener).onDelete(ArgumentMatchers.eq(newDir));
+    verify(watchListener, never()).onCreate(ArgumentMatchers.any());
+    verify(watchListener, never()).onModified(ArgumentMatchers.any());
+  }
+
+  @Test
+  void executeModifiedFile() throws InterruptedException, IOException {
+    var data = serialize(filePath);
+    storage.add("watch", filePath.getAbsolutePath(), data);
+
+    var newFile = Path.of(filePath.getAbsolutePath(), "new_file").toFile();
+    var fileWriter = new FileWriter(newFile);
+    fileWriter.write("current data");
+    fileWriter.flush();
+
+    storage.add("watch", newFile.getAbsolutePath(), serialize(newFile));
+
+    watchMonitor.start();
+
+    TimeUnit.SECONDS.sleep(2);
+
+    fileWriter.write("updated data");
+    fileWriter.flush();
+
+    TimeUnit.SECONDS.sleep(2);
+
+    verify(watchListener, never()).onDelete(ArgumentMatchers.any());
+    verify(watchListener, never()).onCreate(ArgumentMatchers.any());
+    verify(watchListener).onModified(ArgumentMatchers.eq(newFile));
+  }
+
+  private String serialize(File file) throws JsonProcessingException {
+    var fileInfo = new FileInfo();
+    fileInfo.setLastModified(file.lastModified());
+    fileInfo.setPath(file.getAbsolutePath());
+    return objectMapper.writeValueAsString(fileInfo);
   }
 
 }
